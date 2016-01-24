@@ -3,6 +3,8 @@ from .field import Field
 
 
 class ModelMeta(type):
+    """ A Model Meta Class.
+    """
     def __new__(cls, classname, bases, namespace, **kwargs):
         fields = {}
         for key, field in namespace.items():
@@ -18,7 +20,19 @@ class ModelMeta(type):
 
 
 class Model(object, metaclass=ModelMeta):
+    """
+    Attrs:
+      __fields__: A list of Field instances.
+    """
     def __init__(self, *args, **kwargs):
+        """
+        Args:
+          *args:
+            arg[0]: True or False.
+          **kwargs:
+            key: An option name.
+            value: An option's setting value.
+        """
         if args and args[0]:
             for key, value in kwargs.items():
                 setattr(self, key, value)
@@ -33,5 +47,11 @@ class Model(object, metaclass=ModelMeta):
                 raise errors
 
     def __call__(self, *args, **kwargs):
+        """
+        Args:
+          Equal to __init__ constructor.
+        Returns:
+          self
+        """
         self.__init__(*args, **kwargs)
         return self
