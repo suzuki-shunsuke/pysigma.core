@@ -86,15 +86,30 @@ class Field(object, metaclass=FieldMeta):
         """
         Args:
           *args:
-            args[0]: A field name.
+            args[0]: A field name or list of option names.
+            args[1]: A list of option names.
           *kwargs:
             key: An option name.
             value: An option's setting value.
         """
-        self._name = args[0] if args else ""
+        length = len(args)
+        validate_names = []
+        if not length:
+            self._name = ""
+        elif length == 1:
+            arg = args[0]
+            if isinstance(arg, str):
+                self._name = arg
+            else:
+                validate_names = arg
+        else:
+            self._name = args[0]
+            validate_names = args[1]
+        self.__args__ = args
         self.__kwargs__ = kwargs
         self._value = None
         self.__model_name__ = ""
+        self.__model__ = None
         validates = []
         for key in self.__order__:
             option = self.__options__[key]
@@ -108,7 +123,7 @@ class Field(object, metaclass=FieldMeta):
                 validates.append(
                     partial(option.func, self, option)
                 )
-            elif option.required:
+            elif option.required or key in validate_names:
                 validates.append(partial(option.func, self, option))
         self.__validator__ = self.__Validator__()
         self.__validator__.validates = validates
@@ -122,7 +137,10 @@ class Field(object, metaclass=FieldMeta):
         self._value = self.__validator__.validate(val)
 
     def __get__(self, instance, owner):
-        return self.value
+        if instance:
+            return instance.__values__[self._name]
+        else:
+            return self
 
     def __set__(self, instance, value):
-        self.value = value
+        instance.__values__[self._name] = self.__validator__.validate(value)

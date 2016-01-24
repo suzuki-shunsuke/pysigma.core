@@ -7,16 +7,19 @@ class ModelMeta(type):
     """
     def __new__(cls, classname, bases, namespace, **kwargs):
         fields = {}
+        result = type.__new__(cls, classname, bases, namespace, **kwargs)
         for key, field in namespace.items():
             if key.startswith("_"):
                 continue
             if isinstance(field, Field):
                 fields[key] = field
+                field.__Model__ = result
+                field.__model__ = None
                 field.__model_name__ = classname
                 if not field._name:
                     field._name = key
-        namespace["__fields__"] = fields
-        return type.__new__(cls, classname, bases, namespace, **kwargs)
+        result.__fields__ = fields
+        return result
 
 
 class Model(object, metaclass=ModelMeta):
@@ -33,6 +36,9 @@ class Model(object, metaclass=ModelMeta):
             key: An option name.
             value: An option's setting value.
         """
+        self.__values__ = dict((key, None) for key in self.__fields__)
+        for key, field in self.__fields__.items():
+            field.__model__ = self
         if args and args[0]:
             for key, value in kwargs.items():
                 setattr(self, key, value)
