@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="sigma.core",
-    version="0.3.0a0",
+    version="0.5.0a0",
     packages=["sigma", "sigma.core"],
     namespace_packages=["sigma"],
 
