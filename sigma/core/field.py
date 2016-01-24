@@ -32,7 +32,7 @@ class option(object):
         if "default" in kwargs:
             self.default = kwargs["default"]
 
-    def __call__(self, name, func):
+    def __call__(self, func):
         """
         Args:
           name: The option name.
@@ -40,7 +40,7 @@ class option(object):
         Returns:
           self
         """
-        self.name = name
+        self.name = func.__name__
         self.func = func
         return self
 
@@ -61,7 +61,7 @@ class FieldMeta(type):
             if isinstance(func, option):
                 options[key] = func
             if isinstance(func, FunctionType):
-                options[key] = option()(key, func)
+                options[key] = option()(func)
         namespace["__options__"] = options
         namespace.setdefault("__order__", list(options.keys()))
         return type.__new__(cls, classname, bases, namespace, **kwargs)
@@ -102,6 +102,7 @@ class Field(object, metaclass=FieldMeta):
                 self._name = arg
             else:
                 validate_names = arg
+                self._name = ""
         else:
             self._name = args[0]
             validate_names = args[1]
