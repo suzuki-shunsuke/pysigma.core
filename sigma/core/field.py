@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from functools import partial
 from types import FunctionType
 
 from .validator import FieldValidator
@@ -111,23 +110,9 @@ class Field(object, metaclass=FieldMeta):
         self._value = None
         self.__model_name__ = ""
         self.__model__ = None
-        validates = []
-        for key in self.__order__:
-            option = self.__options__[key]
-            if key in kwargs:
-                option.value = kwargs[key]
-                validates.append(
-                    partial(option.func, self, option)
-                )
-            elif hasattr(option, "default"):
-                option.value = option.default
-                validates.append(
-                    partial(option.func, self, option)
-                )
-            elif option.required or key in validate_names:
-                validates.append(partial(option.func, self, option))
-        self.__validator__ = self.__Validator__()
-        self.__validator__.validates = validates
+        self.__validator__ = self.__Validator__(
+            self, *validate_names, **kwargs
+        )
 
     @property
     def value(self):
