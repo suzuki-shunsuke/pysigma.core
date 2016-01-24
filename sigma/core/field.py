@@ -6,7 +6,25 @@ from .validator import FieldValidator
 
 
 class option(object):
+    """
+    Attrs:
+      name: The option name (Default is "").
+      func: The validation function.
+      kwargs: The keyword arguments of the constructor.
+      required: Whether this option is required (Default is False).
+      value: The option's setting value (Default is None).
+      default(option):
+        The option's default setting value.
+        This attribute is created when "default" keyword argument
+        is passed to the constructor.
+    """
     def __init__(self, **kwargs):
+        """
+        Args:
+          **kwargs:
+            required: Whether this option is required (Default is False).
+            default: The option's default setting value.
+        """
         self.name = ""
         self.kwargs = kwargs
         self.required = kwargs.get("required", False)
@@ -15,12 +33,22 @@ class option(object):
             self.default = kwargs["default"]
 
     def __call__(self, name, func):
+        """
+        Args:
+          name: The option name.
+          func: The validation function.
+        Returns:
+          self
+        """
         self.name = name
         self.func = func
         return self
 
 
 class FieldMeta(type):
+    """ The Meta Class of Field Class.
+    Attrs:
+    """
     @classmethod
     def __prepare__(cls, name, bases, **kwds):
         return OrderedDict()
@@ -40,9 +68,29 @@ class FieldMeta(type):
 
 
 class Field(object, metaclass=FieldMeta):
+    """
+    Attrs:
+      __order__:
+        The list of option names.
+        Validation functions is executed in order of this list.
+      __options__: The list of option instances.
+      __Validator__:
+        A FieldValidator class.
+      __validator__:
+        A __Validator__ instance.
+      __model_name__: A Model name.
+    """
     __Validator__ = FieldValidator
 
     def __init__(self, *args, **kwargs):
+        """
+        Args:
+          *args:
+            args[0]: A field name.
+          *kwargs:
+            key: An option name.
+            value: An option's setting value.
+        """
         self._name = args[0] if args else ""
         self.__kwargs__ = kwargs
         self._value = None
