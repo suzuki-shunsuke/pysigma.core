@@ -47,22 +47,22 @@ class ErrorContainer(UserDict, SigmaError):
 class UnitError(SigmaError):
     """
     Attributes:
-      field: A Field instance.
-      option: A option instance.
+      option: An option instance.
       value: A value tried to set.
       model_name: A Model name.
+      field_name: A Field name.
     """
-    def __init__(self, field, option, value):
+    def __init__(self, option, value):
         """
         Args:
-          field: A Field instance.
-          option: A option instance.
+          option: An option instance.
           value: A value tried to set.
         """
-        self.field = field
         self.option = option
         self.value = value
-        self.model_name = field.__model_name__
+        field = getattr(option, "field", False)
+        self.field_name = field.__field_name__ if field else ""
+        self.model_name = field.__model_name__ if field else ""
         super(UnitError, self).__init__()
 
     def __str__(self):
@@ -73,7 +73,7 @@ class UnitError(SigmaError):
                 "value: {}").format(
             self.__class__.__name__,
             self.model_name,
-            self.field._name,
-            self.option.name,
+            self.field_name,
+            self.option.__option_name__,
             self.value
         )

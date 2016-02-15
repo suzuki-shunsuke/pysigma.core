@@ -1,132 +1,99 @@
 from collections import OrderedDict
 from types import FunctionType
 
-from .validator import FieldValidator
-
-
-class option(object):
-    """
-    Attrs:
-      name: The option name (Default is "").
-      func: The validation function.
-      kwargs: The keyword arguments of the constructor.
-      required: Whether this option is required (Default is False).
-      value: The option's setting value (Default is None).
-      default(option):
-        The option's default setting value.
-        This attribute is created when "default" keyword argument
-        is passed to the constructor.
-    """
-    def __init__(self, **kwargs):
-        """
-        Args:
-          **kwargs:
-            required: Whether this option is required (Default is False).
-            default: The option's default setting value.
-        """
-        self.name = ""
-        self.kwargs = kwargs
-        self.required = kwargs.get("required", False)
-        self.value = None
-        if "default" in kwargs:
-            self.default = kwargs["default"]
-
-    def __call__(self, func):
-        """
-        Args:
-          name: The option name.
-          func: The validation function.
-        Returns:
-          self
-        """
-        self.name = func.__name__
-        self.func = func
-        return self
+from .option import Option
 
 
 class FieldMeta(type):
     """ The Meta Class of Field Class.
-    Attrs:
     """
     @classmethod
     def __prepare__(cls, name, bases, **kwds):
         return OrderedDict()
 
     def __new__(cls, classname, bases, namespace, **kwargs):
-        options = {}
-        for key, func in namespace.items():
-            if key.startswith("_"):
-                continue
-            if isinstance(func, option):
-                options[key] = func
-            if isinstance(func, FunctionType):
-                options[key] = option()(func)
-        namespace["__options__"] = options
-        namespace.setdefault("__order__", list(options.keys()))
+        options = OrderedDict()
+        for key, value in namespace.items():
+            if issubclass(value, Option):
+                options[key] = value
+        namespace["__Options__"] = options
         return type.__new__(cls, classname, bases, namespace, **kwargs)
 
 
 class Field(object, metaclass=FieldMeta):
     """
     Attrs:
-      __order__:
-        The list of option names.
-        Validation functions is executed in order of this list.
-      __options__: The list of option instances.
-      __Validator__:
-        A FieldValidator class.
-      __validator__:
-        A __Validator__ instance.
+      __Options__: An OrderedDict instance.
+        key: An option name.
+        value: An Option class.
+      __options__: An OrderedDict instance.
+        key: An option name.
+        value: An Option instance.
       __model_name__: A Model name.
+      __field_name__: A Field name.
+      __value__: A value.
     """
-    __Validator__ = FieldValidator
-
     def __init__(self, *args, **kwargs):
         """
         Args:
           *args:
-            args[0]: A field name or list of option names.
-            args[1]: A list of option names.
+            args[0]: A field name or list of option names or Option instances.
+            args[1]: A list of option names or Option instances.
           *kwargs:
             key: An option name.
             value: An option's setting value.
         """
         length = len(args)
-        validate_names = []
+        _options = {}
         if not length:
-            self._name = ""
+            self.__field_name__ = ""
         elif length == 1:
             arg = args[0]
             if isinstance(arg, str):
-                self._name = arg
+                self.__field_name__ = arg
             else:
-                validate_names = arg
-                self._name = ""
+                for value in arg:
+                    if isinstance(value, str):
+                        _options[value] = self.__Options__[value]()
+                    else:
+                        _options[value.__option_name__] = value
+                self.__field_name__ = ""
         else:
-            self._name = args[0]
-            validate_names = args[1]
-        self.__args__ = args
-        self.__kwargs__ = kwargs
-        self._value = None
+            self.__field_name__ = args[0]
+            for value in arg:
+                if isinstance(value, str):
+                    _options[value] = self.__Options__[value]()
+                else:
+                    _options[value.__option_name__] = value
+        for key, value in kwargs.items():
+            _options[key] = self.__Options__[key](value)
+        options = OrderedDict(
+            (key, _options[key])
+            for key in self.__Options__ if key in _options
+        )
+        self.__options__ = options
+        self.__value__ = None
         self.__model_name__ = ""
         self.__model__ = None
-        self.__validator__ = self.__Validator__(
-            self, *validate_names, **kwargs
-        )
 
     @property
     def value(self):
-        return self._value
+        return self.__value__
 
     @value.setter
-    def value(self, val):
-        self._value = self.__validator__.validate(val)
+    def value(self, value):
+        self.__value__ = self.__validate__(value)
 
     def __get__(self, instance, owner):
         if instance:
-            return instance.__values__[self._name]
+            return instance.__data__[self.__field_name__]
         else:
             return self
 
     def __set__(self, instance, value):
-        instance.__values__[self._name] = self.__validator__.validate(value)
+        instance.__data__[self.__field_name__] = self.__validate__(value)
+
+    def __validate__(self, value):
+        for option in self.__options__.values():
+            value = option(value)
+        return value
