@@ -19,6 +19,9 @@ class Option(object, metaclass=OptionMeta):
     Attrs:
       __option_name__: An Option name(str).
     """
+    def __init__(self, value):
+        self.value = value
+
     def __call__(self, value):
         pass
 

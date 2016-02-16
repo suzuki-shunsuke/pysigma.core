@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from inspect import isclass
 from types import FunctionType
 
 from .option import Option
@@ -14,7 +15,7 @@ class FieldMeta(type):
     def __new__(cls, classname, bases, namespace, **kwargs):
         options = OrderedDict()
         for key, value in namespace.items():
-            if issubclass(value, Option):
+            if isclass(value) and issubclass(value, Option):
                 options[key] = value
         namespace["__Options__"] = options
         return type.__new__(cls, classname, bases, namespace, **kwargs)
