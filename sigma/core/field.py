@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from inspect import isclass
-from types import FunctionType
 
 from .option import Option
 
@@ -45,30 +44,25 @@ class Field(object, metaclass=FieldMeta):
             value: An option's setting value.
         """
         length = len(args)
-        _options = {}
-        if not length:
-            self.__field_name__ = ""
-        elif length == 1:
+        self.__field_name__ = ""
+        static_option_names = set()
+        if length == 1:
             arg = args[0]
             if isinstance(arg, str):
                 self.__field_name__ = arg
             else:
-                for value in arg:
-                    _options[value] = self.__Options__[value]()
-                self.__field_name__ = ""
-        else:
+                static_option_names = set(arg)
+        elif length > 1:
             self.__field_name__ = args[0]
-            for value in arg:
-                if isinstance(value, str):
-                    _options[value] = self.__Options__[value]()
-                else:
-                    _options[value.__option_name__] = value
-        for key, value in kwargs.items():
-            _options[key] = self.__Options__[key](value)
-        options = OrderedDict(
-            (key, _options[key])
-            for key in self.__Options__ if key in _options
-        )
+            static_option_names = set(args[1])
+        options = OrderedDict()
+        for name, ops in self.__Options__.items():
+            if name in static_option_names:
+                options[name] = ops()
+            elif name in kwargs:
+                options[name] = ops(kwargs[name])
+            elif getattr(ops, "omit", False):
+                options[name] = ops()
         self.__options__ = options
         self.__value__ = None
         self.__model_name__ = ""

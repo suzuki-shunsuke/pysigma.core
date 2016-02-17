@@ -1,4 +1,4 @@
-from sigma.core import Field, Model, UnitError, ErrorContainer
+from sigma.core import Field, Model, option, UnitError, ErrorContainer
 
 import pytest
 
@@ -8,6 +8,7 @@ class FooError(UnitError):
 
 
 class NameField(Field):
+    @option
     def error(self, option, value):
         raise FooError(self, option, value)
 

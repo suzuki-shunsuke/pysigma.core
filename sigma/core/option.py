@@ -11,6 +11,14 @@ class OptionMeta(type):
         namespace.setdefault(
             "__option_name__", _convert_camel_to_snake(classname)
         )
+        if "errors" in namespace:
+            error_set = set()
+            for error in namespace["errors"]:
+                if isinstance(error, Exception):
+                    error_set.add(error)
+                else:
+                    error_set.update(*error)
+            namespace["error_set"] = error_set
         return type.__new__(cls, classname, bases, namespace, **kwargs)
 
 
@@ -19,11 +27,23 @@ class Option(object, metaclass=OptionMeta):
     Attrs:
       __option_name__: An Option name(str).
     """
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, *args):
+        if len(args):
+            self.value = args[0]
+        else:
+            if hasattr(self, "default"):
+                self.value = self.default
 
     def __call__(self, value):
-        return self.validate(value)
+        if hasattr(self, "errors"):
+            try:
+                return self.validate(value)
+            except self.error_set as e:
+                for errors, Error in self.errors.items():
+                    if isinstance(e, errors):
+                        raise Error(self, value)
+        else:
+            return self.validate(value)
 
 
 def option(*args, **kwargs):
@@ -42,6 +62,8 @@ def option(*args, **kwargs):
     name = False
 
     def wrap(validate):
+        if validate.__code__.co_argcount == 1
+            validate = staticmethod(validate)
         kwargs["validate"] = validate
         kwargs["__option_name__"] = (
             name if name else _convert_camel_to_snake(validate.__name__)
