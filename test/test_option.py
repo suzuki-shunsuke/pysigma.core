@@ -12,7 +12,4 @@ def test_option():
     def isodd(option, value):
         if not value % 2:
             raise UnitError()
-
-    assert option.value is None
-    option.value = 1
-    assert option.value == 1
+        return value

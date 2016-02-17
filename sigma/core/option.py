@@ -23,26 +23,30 @@ class Option(object, metaclass=OptionMeta):
         self.value = value
 
     def __call__(self, value):
-        pass
+        return self.validate(value)
 
 
 def option(*args, **kwargs):
-    """
-    Args:
-      *args:
-        arg[0]: A callable object or option name(str).
-        arg[1]: A callable object.
-      *kwargs: Option Class's attributes.
+    """ Create An Option class.
+    option(validate)
+      validate: A callable object.
+        validate function.
+
+    option([Option,] [name,] **kwargs)
+      Option: An Option class.
+      name: An option name.
+      **kwargs: Option class's attributes.
+
     Returns: An Option Class.
     """
     name = False
 
-    def wrap(func):
-        kwargs["__call__"] = func
+    def wrap(validate):
+        kwargs["validate"] = validate
         kwargs["__option_name__"] = (
-            name if name else _convert_camel_to_snake(func.__name__)
+            name if name else _convert_camel_to_snake(validate.__name__)
         )
-        return type("Option", (Option,), kwargs)
+        return OptionMeta("Option", (Option,), kwargs)
 
     length = len(args)
     if length == 1:
@@ -54,6 +58,6 @@ def option(*args, **kwargs):
             return wrap(arg)
     elif length > 1:
         name = args[0]
-        func = args[1]
-        return wrap(func)
+        validate = args[1]
+        return wrap(validate)
     return wrap
