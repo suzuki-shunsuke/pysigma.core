@@ -38,8 +38,8 @@ class Field(object, metaclass=FieldMeta):
         """
         Args:
           *args:
-            args[0]: A field name or list of option names or Option instances.
-            args[1]: A list of option names or Option instances.
+            args[0]: A field name or list of option names.
+            args[1]: A list of option names.
           *kwargs:
             key: An option name.
             value: An option's setting value.
@@ -54,10 +54,7 @@ class Field(object, metaclass=FieldMeta):
                 self.__field_name__ = arg
             else:
                 for value in arg:
-                    if isinstance(value, str):
-                        _options[value] = self.__Options__[value]()
-                    else:
-                        _options[value.__option_name__] = value
+                    _options[value] = self.__Options__[value]()
                 self.__field_name__ = ""
         else:
             self.__field_name__ = args[0]
