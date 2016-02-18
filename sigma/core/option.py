@@ -1,7 +1,13 @@
 """
 """
 
+from functools import partial
+
 from .util import _convert_camel_to_snake
+
+
+def __get__(self, instance, owner):
+    return partial(self.validate, instance, self)
 
 
 class OptionMeta(type):
@@ -19,6 +25,16 @@ class OptionMeta(type):
                 else:
                     error_set.update(*error)
             namespace["error_set"] = error_set
+        if "validate" in namespace:
+            validate = namespace["validate"]
+            code = validate.__code__
+            if code.co_varnames[0] in ["self", "field"]:
+                namespace["__get__"] = __get__
+            else:
+                pass
+            if validate.__code__.co_argcount == 1
+                validate = staticmethod(validate)
+            namespace["validate"] = validate
         return type.__new__(cls, classname, bases, namespace, **kwargs)
 
 
@@ -62,9 +78,6 @@ def option(*args, **kwargs):
     name = False
 
     def wrap(validate):
-        if validate.__code__.co_argcount == 1
-            validate = staticmethod(validate)
-        kwargs["validate"] = validate
         kwargs["__option_name__"] = (
             name if name else _convert_camel_to_snake(validate.__name__)
         )
