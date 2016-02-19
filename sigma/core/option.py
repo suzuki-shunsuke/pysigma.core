@@ -1,13 +1,12 @@
 """
 """
 
+from collections import OrderedDict
 from functools import partial
+from inspect import isclass
 
+from .error import UnitError
 from .util import _convert_camel_to_snake
-
-
-def __get__(self, instance, owner):
-    return partial(self.validate, instance, self)
 
 
 class OptionMeta(type):
@@ -19,22 +18,16 @@ class OptionMeta(type):
         )
         if "errors" in namespace:
             error_set = set()
-            for error in namespace["errors"]:
+            errors = namespace["errors"]
+            if not isinstance(errors, dict):
+                errors = {tuple(errors): UnitError}
+                namespace["errors"] = errors
+            for error in errors:
                 if isinstance(error, Exception):
                     error_set.add(error)
                 else:
-                    error_set.update(*error)
-            namespace["error_set"] = error_set
-        if "validate" in namespace:
-            validate = namespace["validate"]
-            code = validate.__code__
-            if code.co_varnames[0] in ["self", "field"]:
-                namespace["__get__"] = __get__
-            else:
-                pass
-            if validate.__code__.co_argcount == 1
-                validate = staticmethod(validate)
-            namespace["validate"] = validate
+                    error_set.update(error)
+            namespace["error_tuple"] = tuple(error_set)
         return type.__new__(cls, classname, bases, namespace, **kwargs)
 
 
@@ -50,16 +43,19 @@ class Option(object, metaclass=OptionMeta):
             if hasattr(self, "default"):
                 self.value = self.default
 
-    def __call__(self, value):
+    def __call__(self, field, value):
         if hasattr(self, "errors"):
             try:
-                return self.validate(value)
-            except self.error_set as e:
+                return self.validate(field, value)
+            except self.error_tuple as e:
                 for errors, Error in self.errors.items():
                     if isinstance(e, errors):
                         raise Error(self, value)
         else:
-            return self.validate(value)
+            return self.validate(field, value)
+
+    def __get__(self, instance, owner):
+        return partial(self.__call__, instance)
 
 
 def option(*args, **kwargs):
@@ -75,24 +71,26 @@ def option(*args, **kwargs):
 
     Returns: An Option Class.
     """
-    name = False
+    def wrap(Option, name, validate_):
+        def validate(self, field, value):
+            return validate_(field, self, value)
 
-    def wrap(validate):
         kwargs["__option_name__"] = (
-            name if name else _convert_camel_to_snake(validate.__name__)
+            name if name else _convert_camel_to_snake(validate_.__name__)
         )
+        kwargs["validate"] = validate
         return OptionMeta("Option", (Option,), kwargs)
 
     length = len(args)
-    if length == 1:
+    if not length:
+        return partial(wrap, Option, False)
+    elif length == 1:
         arg = args[0]
         if isinstance(arg, str):
-            name = arg
-            return wrap
+            return partial(wrap, Option, arg)
+        elif isclass(arg) and issubclass(arg, Option):
+            return partial(wrap, arg, False)
         else:
-            return wrap(arg)
+            return wrap(Option, False, arg)
     elif length > 1:
-        name = args[0]
-        validate = args[1]
-        return wrap(validate)
-    return wrap
+        return partial(wrap, *args)

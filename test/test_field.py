@@ -1,11 +1,11 @@
-from sigma.core import Field
+from sigma.core import Field, option
 
 import pytest
 
 
 class Integer(Field):
     @option(omit=True)
-    def type(value):
+    def type(self, opt, value):
         return int(value)
 
 

@@ -9,7 +9,7 @@ class Size(Option):
 
 def test_option():
     @option
-    def isodd(option, value):
+    def isodd(field, option, value):
         if not value % 2:
             raise UnitError()
         return value

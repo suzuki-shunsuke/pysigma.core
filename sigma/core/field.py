@@ -58,11 +58,17 @@ class Field(object, metaclass=FieldMeta):
         options = OrderedDict()
         for name, ops in self.__Options__.items():
             if name in static_option_names:
-                options[name] = ops()
+                o = ops()
+                options[name] = o
+                setattr(self, name, o)
             elif name in kwargs:
-                options[name] = ops(kwargs[name])
+                o = ops(kwargs[name])
+                options[name] = o
+                setattr(self, name, o)
             elif getattr(ops, "omit", False):
-                options[name] = ops()
+                o = ops()
+                options[name] = o
+                setattr(self, name, o)
         self.__options__ = options
         self.__value__ = None
         self.__model_name__ = ""
@@ -87,5 +93,5 @@ class Field(object, metaclass=FieldMeta):
 
     def __validate__(self, value):
         for option in self.__options__.values():
-            value = option(value)
+            value = option(self, value)
         return value

@@ -10,7 +10,7 @@ class FooError(UnitError):
 class NameField(Field):
     @option
     def error(self, option, value):
-        raise FooError(self, option, value)
+        raise FooError(option, value)
 
 
 class User(Model):
