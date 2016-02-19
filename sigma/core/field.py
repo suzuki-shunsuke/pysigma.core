@@ -59,14 +59,17 @@ class Field(object, metaclass=FieldMeta):
         for name, ops in self.__Options__.items():
             if name in static_option_names:
                 o = ops()
+                o.__option_name__ = name
                 options[name] = o
                 setattr(self, name, o)
             elif name in kwargs:
                 o = ops(kwargs[name])
+                o.__option_name__ = name
                 options[name] = o
                 setattr(self, name, o)
             elif getattr(ops, "omit", False):
                 o = ops()
+                o.__option_name__ = name
                 options[name] = o
                 setattr(self, name, o)
         self.__options__ = options
