@@ -1,4 +1,4 @@
-from sigma.core import Field, Model, option, UnitError, ErrorContainer
+from sigma.core import Field, Model, UnitError, ErrorContainer
 
 import pytest
 
@@ -7,22 +7,23 @@ class FooError(UnitError):
     pass
 
 
-class NameField(Field):
-    @option
-    def error(self, option, value):
-        raise FooError(option, value)
+class Foo(object):
+    __option_name__ = "foo"
+
+    def __call__(self, field, value):
+        raise FooError(field, self, value)
 
 
 class User(Model):
-    name = NameField()
-    password = NameField(error=None)
+    name = Field()
+    password = Field(Foo())
 
 
 def test_model():
     user = User()
     user.name = "foo"
     assert user.name == "foo"
-    user = user(name="bar")
+    user(name="bar")
     assert isinstance(user, User)
     assert user.name == "bar"
     user = User(name="zoo")

@@ -1,5 +1,5 @@
-from .field import Field, FieldMeta
+from .field import Field
 from .error import SigmaError, UnitError, ErrorContainer
 from .model import Model, ModelMeta
-from .option import option, Option
+from .option import Option
 from .util import validate, asdict
