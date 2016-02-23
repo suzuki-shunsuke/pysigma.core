@@ -18,7 +18,8 @@ class Field(object):
           name: A Field name.
           *args: A list of Option instances.
         """
-        self.kwargs = kwargs
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         length = len(args)
         self.__field_name__ = ""
         self.__options__ = OrderedDict()
